@@ -15,8 +15,8 @@ files:
 # as we re-align everything after subsampling.
 inputs:
   - name: open
-    metadata: "metadata.tsv"
-    aligned: "sequences.fasta"
+    metadata: "metadata.tsv.xz"
+    aligned: "sequences.fasta.xz"
     skip_sanitize_metadata: true
 
 # Define locations for which builds should be created.

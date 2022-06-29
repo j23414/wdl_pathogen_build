@@ -280,7 +280,7 @@ task transform_gisaid_data {
     wget 'https://raw.githubusercontent.com/nextstrain/ncov-ingest/modularize_upload/bin/transform-gisaid'
     cd ${CURDIR}
 
-    ./bin/transform-gisaid \
+    python3 bin/transform-gisaid \
       "~{gisaid_ndjson}" \
       --output-metadata metadata_transformed.tsv \
       --output-fasta sequences.fasta \
