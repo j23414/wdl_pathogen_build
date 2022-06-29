@@ -214,3 +214,90 @@ task genbank_ingest {
     disks: "local-disk " + disk_size + " HDD"
   }
 }
+
+# ===  Modularize for debugging purposes
+# https://raw.githubusercontent.com/nextstrain/ncov-ingest/master/bin/check-annotations
+
+task fetch_main_ndjson {
+  input {
+    String GISAID_API_ENDPOINT=""
+    String GISAID_USERNAME_AND_PASSWORD=""
+
+    String docker_img = "nextstrain/ncov-ingest:latest"
+    Int cpu = 16
+    Int disk_size = 1500  # In GiB
+    Float memory = 50
+  }
+
+  command <<< 
+    export GISAID_API_ENDPOINT=~{GISAID_API_ENDPOINT}
+    export GISAID_USERNAME_AND_PASSWORD=~{GISAID_USERNAME_AND_PASSWORD}
+
+    wget 'https://raw.githubusercontent.com/nextstrain/ncov-ingest/modularize_upload/bin/fetch-from-gisaid'
+    mkdir data
+    bash fetch-from-gisaid gisaid.ndjson
+  >>>
+
+  output {
+    File gisaid_ndjson="gisaid.ndjson"
+  }
+
+  runtime {
+    docker: docker_img
+    cpu : cpu
+    memory: memory + " GiB"
+    disks: "local-disk " + disk_size + " HDD"
+  }
+}
+
+task transform_gisaid_data {
+  input {
+    File gisaid_ndjson
+    String docker_img = "nextstrain/ncov-ingest:latest"
+    Int cpu = 16
+    Int disk_size = 1500  # In GiB
+    Float memory = 50
+  }
+  command <<<
+    export CURDIR=`pwd`
+  
+    # set up utils
+    mkdir -p lib/utils/transformpipeline
+    cd lib/utils/transformpipeline
+    wget 'https://raw.githubusercontent.com/nextstrain/ncov-ingest/modularize_upload/lib/utils/transformpipeline/__init__.py'
+    wget 'https://raw.githubusercontent.com/nextstrain/ncov-ingest/modularize_upload/lib/utils/transformpipeline/_base.py'
+    wget 'https://raw.githubusercontent.com/nextstrain/ncov-ingest/modularize_upload/lib/utils/transformpipeline/datasource.py'
+    wget 'https://raw.githubusercontent.com/nextstrain/ncov-ingest/modularize_upload/lib/utils/transformpipeline/filters.py'
+    wget 'https://raw.githubusercontent.com/nextstrain/ncov-ingest/modularize_upload/lib/utils/transformpipeline/transforms.py'
+    cd ..
+    wget 'https://raw.githubusercontent.com/nextstrain/ncov-ingest/modularize_upload/lib/utils/hierarchy_dataframe.py'
+    wget 'https://raw.githubusercontent.com/nextstrain/ncov-ingest/modularize_upload/lib/utils/transform.py'
+    cd ${CURDIR}
+
+    # pull script that uses utils
+    mkdir bin
+    cd bin
+    wget 'https://raw.githubusercontent.com/nextstrain/ncov-ingest/modularize_upload/bin/transform-gisaid'
+    cd ${CURDIR}
+
+    ./bin/transform-gisaid \
+      "~{gisaid_ndjson}" \
+      --output-metadata metadata_transformed.tsv \
+      --output-fasta sequences.fasta \
+      --output-additional-info additional_info.tsv \
+      --output-unix-newline \
+      > flagged-annotations
+  >>>
+  output {
+    File sequences_fasta="sequences.fasta"
+    File metadata_transformed_tsv="metadata_transformed.tsv"
+    File additional_info_tsv="additional_info.tsv"
+    File flagged_annotations="flagged-annotations"
+  }
+  runtime {
+    docker: docker_img
+    cpu : cpu
+    memory: memory + " GiB"
+    disks: "local-disk " + disk_size + " HDD"
+  }
+}
