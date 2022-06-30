@@ -274,6 +274,16 @@ task transform_gisaid_data {
     wget 'https://raw.githubusercontent.com/nextstrain/ncov-ingest/modularize_upload/lib/utils/transform.py'
     cd ${CURDIR}
 
+    # setup gisaid annotations
+    mkdir source-data
+    cd source-data
+    wget 'https://raw.githubusercontent.com/nextstrain/ncov-ingest/modularize_upload/source-data/gisaid_annotations.tsv'
+    wget 'https://raw.githubusercontent.com/nextstrain/ncov-ingest/modularize_upload/source-data/gisaid_geoLocationRules.tsv'
+    wget 'https://raw.githubusercontent.com/nextstrain/ncov-ingest/modularize_upload/source-data/accessions.tsv.gz'
+    wget 'https://raw.githubusercontent.com/nextstrain/ncov-ingest/modularize_upload/source-data/location_hierarchy.tsv'
+    wget 'https://raw.githubusercontent.com/nextstrain/ncov-ingest/modularize_upload/source-data/us-state-codes.tsv'
+    cd ${CURDIR}
+
     # pull script that uses utils
     mkdir bin
     cd bin
